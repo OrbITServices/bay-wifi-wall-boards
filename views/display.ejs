@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title><%= settings.site_name || 'Bay WiFi Wall Boards' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div
+  class="screen"
+  data-weather-location="<%= settings.weather_location || 'Tenby' %>"
+  style="
+    --bg:<%= settings.background || '#07111f' %>;
+    --text:<%= settings.text_colour || '#ffffff' %>;
+    --accent:<%= settings.accent_colour || '#2fb5df' %>;
+  "
+>
+  <header class="header">
+    <img class="logo" src="<%= brandLogo %>" alt="Logo">
+
+    <div class="top-info">
+      <div class="date" id="date">Loading date</div>
+      <div class="time-weather">
+        <div class="time" id="time">--:--</div>
+        <div class="weather">
+          <span id="weather-icon">⛅</span>
+          <span id="weather-temp">--°C</span>
+          <span id="weather-label">Weather</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <% pages.forEach(page => { %>
+    <section class="slide" data-duration="<%= Math.max(3, page.duration || 15) * 1000 %>">
+      <div class="media">
+        <% if (page.media_url) { %>
+          <% if (page.is_video) { %>
+            <video src="<%= page.media_url %>" muted loop playsinline></video>
+          <% } else { %>
+            <img src="<%= page.media_url %>" alt="">
+          <% } %>
+        <% } else { %>
+          <div class="holding">
+            <img class="holding-logo" src="<%= brandLogo %>" alt="Logo">
+            <div class="holding-icon">
+              <%= page.page_type === 'wifi' ? 'WiFi' : page.page_type === 'map' ? 'Map' : page.page_type === 'emergency' ? 'SOS' : page.page_type === 'events' ? 'Events' : 'Info' %>
+            </div>
+            <h3><%= page.title %></h3>
+            <p><%= page.subtitle %></p>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="content">
+        <div class="content-centre">
+          <span class="label"><%= page.label || 'Guest Information' %></span>
+          <h1><%= page.title %></h1>
+          <% if (page.subtitle) { %><h2><%= page.subtitle %></h2><% } %>
+
+          <div class="text">
+            <% page.body_lines.forEach(line => { %>
+              <p><%= line %></p>
+            <% }) %>
+          </div>
+        </div>
+
+        <% if (page.qr_image) { %>
+          <div class="qr-box">
+            <img class="qr" src="<%= page.qr_image %>" alt="QR Code">
+            <div>
+              <h3><%= page.qr_label || (page.page_type === 'wifi' ? 'Scan to Connect' : 'Scan QR Code') %></h3>
+
+              <% if (page.page_type === 'wifi') { %>
+                <p><strong>Network:</strong> <%= page.ssid %></p>
+                <% if (page.wifi_security !== 'nopass') { %>
+                  <p><strong>Password:</strong> <%= page.wifi_password %></p>
+                <% } else { %>
+                  <p><strong>Open WiFi network</strong></p>
+                <% } %>
+              <% } else { %>
+                <p>Scan with your phone for more information.</p>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  <% }) %>
+
+  <% if (settings.footer) { %>
+    <footer class="footer"><%= settings.footer %></footer>
+  <% } %>
+</div>
+
+<style>
+html,body{margin:0;padding:0;background:#000;overflow:hidden}
+*{box-sizing:border-box}
+.screen{position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+.header{position:absolute;top:24px;left:34px;right:34px;height:76px;display:flex;justify-content:space-between;align-items:flex-start;z-index:5}
+.logo{max-height:68px;max-width:280px;object-fit:contain}
+.top-info{display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right}
+.date{font-size:21px;font-weight:700}
+.time-weather{display:flex;align-items:center;gap:14px}
+.time{font-size:32px;font-weight:800;color:var(--accent)}
+.weather{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.20);border-radius:16px;padding:8px 12px;white-space:nowrap}
+.weather span{font-size:17px}
+#weather-icon{font-size:25px}
+#weather-temp{font-size:23px;font-weight:800;color:var(--accent)}
+.slide{display:none;width:100%;height:100%;grid-template-columns:55% 45%;align-items:stretch;gap:38px;padding:120px 50px 78px}
+.slide.active{display:grid}
+.media img,.media video{width:100%;height:72vh;object-fit:contain;border-radius:18px;background:rgba(0,0,0,.28)}
+.holding{height:72vh;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:46px;text-align:center}
+.holding-logo{max-width:220px;max-height:80px;object-fit:contain}
+.holding-icon{width:160px;height:160px;border-radius:50%;border:3px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+.holding h3{font-size:46px;line-height:1.05;margin:0}
+.holding p{font-size:26px;margin:0}
+.content{background:rgba(255,255,255,.10);padding:40px;border-radius:22px;border:1px solid rgba(255,255,255,.18);height:72vh;display:flex;flex-direction:column;text-align:center}
+.content-centre{margin:auto 0;width:100%}
+.label{display:inline-block;color:var(--accent);font-size:17px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+.content h1{font-size:50px;line-height:1.05;margin:0 0 14px}
+.content h2{font-size:27px;margin:0 0 24px;color:var(--accent);font-weight:600}
+.text p{font-size:24px;line-height:1.28;margin:0 0 13px}
+.qr-box{display:grid;grid-template-columns:170px 1fr;gap:22px;align-items:center;margin-top:auto;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:20px;text-align:left}
+.qr{width:170px!important;height:170px!important;background:#fff!important;padding:10px;border-radius:12px!important;object-fit:contain!important}
+.qr-box h3{font-size:28px;margin:0 0 10px;color:var(--accent)}
+.qr-box p{font-size:22px;margin:7px 0}
+.footer{position:absolute;left:40px;right:40px;bottom:30px;text-align:center;font-size:21px;opacity:.85;z-index:5}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  const screen=document.querySelector('.screen');
+  const slides=document.querySelectorAll('.slide');
+  let current=0,timer=null;
+
+  function showSlide(index){
+    slides.forEach(function(slide){
+      slide.classList.remove('active');
+      slide.querySelectorAll('video').forEach(function(video){
+        try{video.pause();video.currentTime=0}catch(e){}
+      });
+    });
+    const active=slides[index];
+    if(!active)return;
+    active.classList.add('active');
+    active.querySelectorAll('video').forEach(function(video){try{video.play()}catch(e){}});
+    const duration=parseInt(active.dataset.duration||15000,10);
+    clearTimeout(timer);
+    timer=setTimeout(function(){current=(current+1)%slides.length;showSlide(current)},duration);
+  }
+
+  function getOrdinal(day){if(day>3&&day<21)return'th';switch(day%10){case 1:return'st';case 2:return'nd';case 3:return'rd';default:return'th'}}
+
+  function updateTimeAndDate(){
+    const now=new Date();
+    const timeEl=document.getElementById('time');
+    const dateEl=document.getElementById('date');
+    if(timeEl)timeEl.textContent=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    if(dateEl){
+      const weekday=now.toLocaleDateString('en-GB',{weekday:'long'});
+      const month=now.toLocaleDateString('en-GB',{month:'long'});
+      const day=now.getDate();
+      const year=now.getFullYear();
+      dateEl.textContent=weekday+' '+day+getOrdinal(day)+' '+month+' '+year;
+    }
+  }
+
+  function getWeatherIcon(condition){
+    const text=String(condition||'').toLowerCase();
+    if(text.includes('thunder'))return'⛈️';
+    if(text.includes('snow')||text.includes('sleet'))return'❄️';
+    if(text.includes('rain')||text.includes('drizzle')||text.includes('shower'))return'🌧️';
+    if(text.includes('fog')||text.includes('mist'))return'🌫️';
+    if(text.includes('cloud')||text.includes('overcast'))return'☁️';
+    if(text.includes('sun')||text.includes('clear'))return'☀️';
+    return'⛅';
+  }
+
+  function updateWeather(){
+    const location=screen.dataset.weatherLocation||'Tenby';
+    fetch('https://wttr.in/'+encodeURIComponent(location)+'?format=j1')
+      .then(function(response){return response.json()})
+      .then(function(data){
+        const currentWeather=data.current_condition[0];
+        const description=currentWeather.weatherDesc[0].value;
+        document.getElementById('weather-icon').textContent=getWeatherIcon(description);
+        document.getElementById('weather-temp').textContent=currentWeather.temp_C+'°C';
+        document.getElementById('weather-label').textContent=description;
+      })
+      .catch(function(){
+        document.getElementById('weather-icon').textContent='⛅';
+        document.getElementById('weather-temp').textContent='--°C';
+        document.getElementById('weather-label').textContent='Weather unavailable';
+      });
+  }
+
+  if(slides.length)showSlide(current);
+  updateTimeAndDate();
+  updateWeather();
+  setInterval(updateTimeAndDate,30000);
+  setInterval(updateWeather,1800000);
+});
+</script>
+</body>
+</html>

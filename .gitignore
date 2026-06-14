@@ -1,0 +1,11 @@
+node_modules/
+.env
+
+public/uploads/*
+!public/uploads/.gitkeep
+
+*.db
+*.sqlite
+
+logs/
+npm-debug.log
