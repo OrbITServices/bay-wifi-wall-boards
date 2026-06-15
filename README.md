@@ -1,45 +1,86 @@
 # Bay WiFi Wall Boards
 
-Digital signage and guest WiFi wallboard platform for Raspberry Pi.
+Bay WiFi Wall Boards is a Raspberry Pi based digital signage and guest information platform designed for holiday parks, guest accommodation, reception areas and waiting rooms.
 
-## Features
+The system supports two deployment modes:
 
-* Guest WiFi display
-* QR code generation
-* Weather display
-* Rotating slides
-* Image and video support
+## Master Mode
+
+Runs:
+
+* Bay WiFi application
 * Admin portal
-* Multi-page wallboards
-* Full-screen kiosk mode
-* Raspberry Pi deployment
+* Database
+* File uploads
+* Display screen
+
+A Master Wallboard manages all content.
+
+Example:
+
+```text
+http://192.168.1.10:3000
+```
+
+---
+
+## Display Mode
+
+Runs:
+
+* Raspberry Pi OS
+* Falkon Browser
+* Kiosk Mode
+
+A Display Wallboard does not run the application locally.
+
+Instead it connects to a Master Wallboard and displays:
+
+```text
+http://MASTER-IP:3000/display
+```
+
+This allows multiple screens to be managed from a single Master installation.
 
 ---
 
 # Recommended Hardware
 
-## Minimum
+## Master
+
+Recommended:
+
+* Raspberry Pi 4 (2GB+)
+* Synology NAS (Docker)
+* VPS
+* Linux Server
+
+Minimum:
 
 * Raspberry Pi 3B+
-* 16GB SD Card
-* Raspberry Pi OS Legacy
-
-## Recommended
-
-* Raspberry Pi 4 2GB+
-* 16GB+ SD Card or SSD
 
 ---
 
-# Fresh Raspberry Pi Installation
+## Display
 
-Install:
+Recommended:
 
-* Raspberry Pi OS Legacy (32-bit)
-* SSH enabled
-* WiFi configured
+* Raspberry Pi 3B+
+* Raspberry Pi 4
+* Raspberry Pi Zero 2W
 
-Update system:
+---
+
+# Installation
+
+Install Raspberry Pi OS Legacy.
+
+Enable:
+
+* SSH
+* WiFi
+
+Update the system:
 
 ```bash
 sudo apt update
@@ -47,17 +88,13 @@ sudo apt full-upgrade -y
 sudo reboot
 ```
 
----
-
-# Install Git
+Install Git:
 
 ```bash
 sudo apt install -y git
 ```
 
----
-
-# Clone Repository
+Clone Repository:
 
 ```bash
 git clone git@github.com:OrbITServices/bay-wifi-wall-boards.git
@@ -65,9 +102,7 @@ git clone git@github.com:OrbITServices/bay-wifi-wall-boards.git
 cd bay-wifi-wall-boards
 ```
 
----
-
-# Run Installer
+Run Installer:
 
 ```bash
 chmod +x install.sh
@@ -77,47 +112,115 @@ chmod +x install.sh
 
 ---
 
-# PM2 Startup
+# Installation Types
 
-Run:
+The installer will ask:
 
-```bash
-pm2 startup
+```text
+1) Master
+2) Display Only
 ```
 
-Copy and run the command PM2 gives you.
+## Master
 
-Then:
+Installs:
 
-```bash
-pm2 save
+* Node.js
+* PM2
+* Bay WiFi Wall Boards
+* Admin Portal
+* Local Display
+
+## Display Only
+
+Installs:
+
+* X11
+* Openbox
+* Falkon
+* Kiosk Mode
+
+Prompts for:
+
+```text
+Master Wallboard Address
+```
+
+Example:
+
+```text
+192.168.1.10:3000
+```
+
+The display will automatically launch:
+
+```text
+http://192.168.1.10:3000/display
 ```
 
 ---
 
 # Application URLs
 
-Admin:
+## Admin Portal
 
 ```text
-http://PI-IP:3000/admin
+http://SERVER-IP:3000/admin
 ```
 
-Display:
+## Display
 
 ```text
-http://PI-IP:3000/display
+http://SERVER-IP:3000/display
 ```
 
-Health Check:
+## Health Check
 
 ```text
-http://PI-IP:3000/health
+http://SERVER-IP:3000/health
 ```
 
 ---
 
+# PM2 Commands
+
+View Status:
+
+```bash
+pm2 list
+```
+
+Restart:
+
+```bash
+pm2 restart baywifi
+```
+
+Logs:
+
+```bash
+pm2 logs baywifi
+```
+
+Save Configuration:
+
+```bash
+pm2 save
+```
+
+Enable Startup:
+
+```bash
+pm2 startup
+```
+
+Run the command PM2 provides.
+
+---
+
 # Updating
+
+Update to latest version:
 
 ```bash
 cd ~/bay-wifi-wall-boards
@@ -131,33 +234,9 @@ pm2 restart baywifi
 
 ---
 
-# Restart Application
-
-```bash
-pm2 restart baywifi
-```
-
----
-
-# Check Application Status
-
-```bash
-pm2 list
-```
-
----
-
-# View Logs
-
-```bash
-pm2 logs baywifi
-```
-
----
-
 # WiFi Configuration
 
-List WiFi Networks:
+List Networks:
 
 ```bash
 nmcli device wifi list
@@ -169,10 +248,34 @@ Connect:
 sudo nmcli device wifi connect "SSID" password "PASSWORD"
 ```
 
-Check Current Connection:
+Show Current Connection:
 
 ```bash
 nmcli connection show --active
+```
+
+Show IP Address:
+
+```bash
+hostname -I
+```
+
+---
+
+# Display Settings
+
+Disable Screen Blanking:
+
+```bash
+DISPLAY=:0 xset s off
+DISPLAY=:0 xset -dpms
+DISPLAY=:0 xset s noblank
+```
+
+Verify:
+
+```bash
+DISPLAY=:0 xset q
 ```
 
 ---
@@ -184,12 +287,12 @@ Commit Changes:
 ```bash
 git add .
 
-git commit -m "Description of changes"
+git commit -m "Description"
 
 git push
 ```
 
-Pull Latest Version:
+Pull Changes:
 
 ```bash
 git pull
@@ -197,7 +300,25 @@ git pull
 
 ---
 
-# Useful Commands
+# Release Process
+
+Create Release:
+
+```bash
+git tag v1.0.0
+
+git push origin v1.0.0
+```
+
+---
+
+# Troubleshooting
+
+Application Status:
+
+```bash
+pm2 list
+```
 
 Memory Usage:
 
@@ -217,60 +338,22 @@ Disk Space:
 df -h
 ```
 
-GPU Memory:
+Network:
 
 ```bash
-vcgencmd get_mem gpu
+ping google.com
 ```
 
 ---
 
-# Browser
+# Future Roadmap
 
-Current recommended browser:
-
-```text
-Falkon
-```
-
-Autostart:
-
-```bash
-falkon --fullscreen http://localhost:3000/display
-```
-
----
-
-# Backup
-
-Backup WiFi:
-
-```bash
-sudo cp -r /etc/NetworkManager/system-connections ~/wifi-backup
-```
-
-Backup Environment:
-
-```bash
-cp .env .env.backup
-```
-
----
-
-# Release Process
-
-```bash
-git add .
-
-git commit -m "Release"
-
-git push
-
-git tag v1.0.0
-
-git push origin v1.0.0
-```
-
-
-
+* Master auto-discovery
+* Multiple display groups
+* Remote display management
+* Synology package
+* Docker deployment
+* Cloud hosted management
+* Automatic updates
+* First boot setup wizard
 
