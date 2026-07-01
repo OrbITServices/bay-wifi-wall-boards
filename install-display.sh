@@ -1,59 +1,86 @@
 #!/bin/bash
 set -e
+cd "$(dirname "$0")"
 
-echo "Installing Bay WiFi Display Only..."
+echo "Installing Display Board..."
 
 sudo apt update
-sudo apt install -y xserver-xorg xinit openbox falkon unclutter
+sudo apt install -y \
+  xserver-xorg x11-xserver-utils xinit openbox chromium-browser unclutter \
+  avahi-daemon avahi-utils curl
 
-read -p "Enter master wallboard address, e.g. 192.168.1.10:3000: " MASTER
+sudo systemctl enable avahi-daemon
+sudo systemctl restart avahi-daemon
 
-if [[ "$MASTER" != http* ]]; then
-  MASTER="http://$MASTER"
-fi
+mkdir -p "$HOME/.config/openbox"
+mkdir -p "$HOME/bin"
 
-DISPLAY_URL="$MASTER/display"
+cat > "$HOME/bin/baywifi-find-master.sh" <<'EOF'
+#!/bin/bash
 
-mkdir -p ~/.baywifi
-echo "$DISPLAY_URL" > ~/.baywifi/display-url.txt
+SERVICE="_baywifi._tcp"
+FALLBACK_FILE="$HOME/.baywifi-master"
 
-mkdir -p ~/.config/openbox
+while true; do
+  FOUND=$(avahi-browse -rt "$SERVICE" 2>/dev/null | awk -F';' '/=;.*IPv4/ {print $8 ":" $9; exit}')
 
-cat > ~/.config/openbox/autostart <<EOF
-xset s off &
-xset -dpms &
-xset s noblank &
+  if [ -n "$FOUND" ]; then
+    echo "$FOUND" > "$FALLBACK_FILE"
+    echo "Found master: $FOUND"
+    echo "http://$FOUND/display"
+    exit 0
+  fi
 
-unclutter -idle 0.5 -root &
+  if [ -f "$FALLBACK_FILE" ]; then
+    OLD=$(cat "$FALLBACK_FILE")
+    if [ -n "$OLD" ]; then
+      echo "Using previous master: $OLD"
+      echo "http://$OLD/display"
+      exit 0
+    fi
+  fi
 
-sleep 15
-
-falkon --fullscreen $DISPLAY_URL
+  echo "Waiting for Bay WiFi master..."
+  sleep 5
+done
 EOF
 
-cat > ~/.xinitrc <<EOF
-exec openbox-session
+chmod +x "$HOME/bin/baywifi-find-master.sh"
+
+cat > "$HOME/.config/openbox/autostart" <<'EOF'
+xset s off
+xset -dpms
+xset s noblank
+
+unclutter -idle 0.1 &
+
+while true; do
+  URL="$($HOME/bin/baywifi-find-master.sh | tail -n 1)"
+
+  chromium-browser \
+    --kiosk \
+    --noerrdialogs \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-features=TranslateUI \
+    "$URL"
+
+  sleep 5
+done &
 EOF
 
-cat > ~/.bash_profile <<EOF
-if [ -z "\$DISPLAY" ] && [ "\$(tty)" = "/dev/tty1" ]; then
+cat > "$HOME/.bash_profile" <<'EOF'
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
     startx
 fi
 EOF
 
-sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
-
-sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null <<EOF
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
-EOF
-
-sudo systemctl daemon-reload
-
-echo ""
-echo "Display-only install complete."
-echo "Opening: $DISPLAY_URL"
-echo ""
-echo "Reboot with:"
-echo "sudo reboot"
+echo
+echo "Display install/update complete."
+echo "It will auto-discover the master using mDNS/Avahi."
+echo
+echo "IMPORTANT: run sudo raspi-config and enable:"
+echo "System Options > Boot / Auto Login > Console Autologin"
+echo
+read -p "Reboot now? [y/N]: " rb
+[[ "$rb" =~ ^[Yy]$ ]] && sudo reboot
