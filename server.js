@@ -571,10 +571,7 @@ app.get('/admin/page/:id', requireLogin, (req, res) => {
 app.post(
   '/admin/page/:id',
   requireLogin,
-  upload.fields([
-    { name: 'media_file', maxCount: 1 },
-    { name: 'gallery_files', maxCount: 20 }
-  ]),
+  upload.single('media_file')
   (req, res) => {
     const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
 
@@ -582,30 +579,11 @@ app.post(
       return res.status(404).send('Page not found');
     }
 
-    const media = req.files?.media_file?.[0]
-      ? req.files.media_file[0].filename
-      : page.media;
+   const media = req.file
+    ? req.file.filename
+    : page.media;
 
-    if (req.files?.gallery_files?.length) {
-      const maxSort = db.prepare(`
-        SELECT COALESCE(MAX(sort_order), 0) AS max_sort
-        FROM gallery_images
-        WHERE page_id = ?
-      `).get(req.params.id);
-
-      const insertGalleryImage = db.prepare(`
-        INSERT INTO gallery_images (page_id, filename, sort_order)
-        VALUES (?, ?, ?)
-      `);
-
-      req.files.gallery_files.forEach((file, index) => {
-        insertGalleryImage.run(
-          req.params.id,
-          file.filename,
-          maxSort.max_sort + index + 1
-        );
-      });
-    }
+    
 
     db.prepare(`
       UPDATE pages
