@@ -67,6 +67,31 @@
         </p>
       </div>
 
+      <label>Gallery Images</label>
+<div>
+  <input type="file" name="gallery_files" accept="image/*,video/*" multiple>
+  <p class="field-help">Upload multiple images/videos for Gallery pages.</p>
+</div>
+
+<% if (typeof galleryImages !== 'undefined' && galleryImages.length) { %>
+  <label>Current Gallery</label>
+  <div class="gallery-admin-grid">
+    <% galleryImages.forEach(image => { %>
+      <div class="gallery-admin-item">
+        <% if (image.is_video) { %>
+          <video src="<%= image.url %>" muted controls></video>
+        <% } else { %>
+          <img src="<%= image.url %>">
+        <% } %>
+
+        <form method="post" action="/admin/gallery-image/<%= image.id %>/delete">
+          <button type="submit">Remove</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
       <% if (page.media) { %>
         <label>Current Media</label>
         <div>
