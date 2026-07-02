@@ -652,6 +652,44 @@ app.post('/admin/page/:id/remove-media', requireLogin, (req, res) => {
   res.redirect('/admin/page/' + req.params.id);
 });
 
+app.post(
+  '/admin/page/:id/gallery-upload',
+  requireLogin,
+  upload.fields([
+    { name: 'gallery_files', maxCount: 20 }
+  ]),
+  (req, res) => {
+    const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
+
+    if (!page) {
+      return res.status(404).send('Page not found');
+    }
+
+    if (req.files?.gallery_files?.length) {
+      const maxSort = db.prepare(`
+        SELECT COALESCE(MAX(sort_order), 0) AS max_sort
+        FROM gallery_images
+        WHERE page_id = ?
+      `).get(req.params.id);
+
+      const insertGalleryImage = db.prepare(`
+        INSERT INTO gallery_images (page_id, filename, sort_order)
+        VALUES (?, ?, ?)
+      `);
+
+      req.files.gallery_files.forEach((file, index) => {
+        insertGalleryImage.run(
+          req.params.id,
+          file.filename,
+          maxSort.max_sort + index + 1
+        );
+      });
+    }
+
+    res.redirect('/admin/page/' + req.params.id);
+  }
+);
+
 app.post('/admin/gallery-image/:id/delete', requireLogin, (req, res) => {
   const image = db.prepare(`
     SELECT *
