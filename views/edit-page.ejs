@@ -1,1 +1,143 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Edit Page</title><link rel="stylesheet" href="/public/css/admin.css"></head><body><header class="topbar"><div class="admin-brand"><img class="admin-logo" src="<%= brandLogo %>" alt="Bay WiFi"><div><h1>Edit Page</h1><small><%= page.title %> · <%= user.role %></small></div></div><nav><a href="/admin">Back to Admin</a><a href="/display" target="_blank">Open Display</a><a href="/logout">Logout</a></nav></header><main class="admin-wrap"><section class="panel"><form method="post" enctype="multipart/form-data" class="grid-form"><label>Enabled</label><input type="checkbox" name="enabled" value="1" <%= page.enabled ? 'checked' : '' %>><label>Page Type</label><select name="page_type"><option value="standard" <%= page.page_type === 'standard' ? 'selected' : '' %>>Standard</option><option value="wifi" <%= page.page_type === 'wifi' ? 'selected' : '' %>>WiFi</option><option value="map" <%= page.page_type === 'map' ? 'selected' : '' %>>Map</option><option value="emergency" <%= page.page_type === 'emergency' ? 'selected' : '' %>>Emergency</option><option value="events" <%= page.page_type === 'events' ? 'selected' : '' %>>Events</option></select><label>Sort Order</label><input type="number" name="sort_order" value="<%= page.sort_order %>"><label>Display Seconds</label><input type="number" name="duration" value="<%= page.duration %>" min="3"><label>Small Label</label><input name="label" value="<%= page.label || '' %>"><label>Title</label><input name="title" value="<%= page.title || '' %>"><label>Subtitle</label><input name="subtitle" value="<%= page.subtitle || '' %>"><label>Main Text</label><textarea name="body" rows="12"><%= page.body || '' %></textarea><label>Image / Video / Map</label><input type="file" name="media_file" accept="image/*,video/*"><% if (page.media) { %><label>Current Media</label><div><p><%= page.media %></p><button formaction="/admin/page/<%= page.id %>/remove-media" formmethod="post">Remove Media</button></div><% } %><label>QR Label</label><input name="qr_label" value="<%= page.qr_label || '' %>"><label>QR Link</label><input name="qr_url" value="<%= page.qr_url || '' %>" placeholder="https://example.com/map-or-guide"><div class="wifi-settings-block" id="wifi-settings-block"><h2 class="form-break">WiFi Settings</h2><div></div><label>WiFi Network</label><input name="ssid" value="<%= page.ssid || '' %>"><label>WiFi Password</label><input name="wifi_password" value="<%= page.wifi_password || '' %>"><label>WiFi Security</label><select name="wifi_security"><option value="WPA" <%= page.wifi_security === 'WPA' ? 'selected' : '' %>>WPA/WPA2</option><option value="WEP" <%= page.wifi_security === 'WEP' ? 'selected' : '' %>>WEP</option><option value="nopass" <%= page.wifi_security === 'nopass' ? 'selected' : '' %>>Open Network</option></select></div><div></div><button type="submit">Save Page</button></form></section></main><script>const pageType=document.querySelector('select[name="page_type"]');const wifiBlock=document.getElementById('wifi-settings-block');function toggleWifiSettings(){if(!pageType||!wifiBlock)return;wifiBlock.style.display=pageType.value==='wifi'?'contents':'none'}if(pageType){pageType.addEventListener('change',toggleWifiSettings);toggleWifiSettings()}</script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Edit Page</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+</head>
+
+<body>
+<header class="topbar">
+  <div class="admin-brand">
+    <img class="admin-logo" src="<%= brandLogo %>" alt="Bay WiFi">
+    <div>
+      <h1>Edit Page</h1>
+      <small><%= page.title %> · <%= user.role %></small>
+    </div>
+  </div>
+
+  <nav>
+    <a href="/admin">Back to Admin</a>
+    <a href="/display" target="_blank">Open Display</a>
+    <a href="/logout">Logout</a>
+  </nav>
+</header>
+
+<main class="admin-wrap">
+  <section class="panel">
+    <form method="post" enctype="multipart/form-data" class="grid-form">
+
+      <label>Enabled</label>
+      <input type="checkbox" name="enabled" value="1" <%= page.enabled ? 'checked' : '' %>>
+
+      <label>Page Type</label>
+      <select name="page_type">
+        <option value="standard" <%= page.page_type === 'standard' ? 'selected' : '' %>>Standard</option>
+        <option value="wifi" <%= page.page_type === 'wifi' ? 'selected' : '' %>>WiFi</option>
+        <option value="map" <%= page.page_type === 'map' ? 'selected' : '' %>>Map</option>
+        <option value="emergency" <%= page.page_type === 'emergency' ? 'selected' : '' %>>Emergency</option>
+        <option value="events" <%= page.page_type === 'events' ? 'selected' : '' %>>Events</option>
+        <option value="restaurant_menu" <%= page.page_type === 'restaurant_menu' ? 'selected' : '' %>>Restaurant Menu</option>
+        <option value="gallery" <%= page.page_type === 'gallery' ? 'selected' : '' %>>Gallery</option>
+      </select>
+
+      <label>Sort Order</label>
+      <input type="number" name="sort_order" value="<%= page.sort_order %>">
+
+      <label>Display Seconds</label>
+      <input type="number" name="duration" value="<%= page.duration %>" min="3">
+
+      <label>Small Label</label>
+      <input name="label" value="<%= page.label || '' %>">
+
+      <label>Title</label>
+      <input name="title" value="<%= page.title || '' %>">
+
+      <label>Subtitle</label>
+      <input name="subtitle" value="<%= page.subtitle || '' %>">
+
+      <label>Main Text</label>
+      <textarea name="body" rows="12"><%= page.body || '' %></textarea>
+
+      <label>Image / Video / Map / Gallery Image</label>
+      <div>
+        <input type="file" name="media_file" accept="image/*,video/*">
+        <p class="field-help">
+          For Gallery or Restaurant Menu pages, this image/video will display full-screen.
+        </p>
+      </div>
+
+      <% if (page.media) { %>
+        <label>Current Media</label>
+        <div>
+          <p><%= page.media %></p>
+          <button formaction="/admin/page/<%= page.id %>/remove-media" formmethod="post">
+            Remove Media
+          </button>
+        </div>
+      <% } %>
+
+      <div class="qr-settings-block" id="qr-settings-block">
+        <h2 class="form-break">QR Settings</h2>
+        <div></div>
+
+        <label>QR Label</label>
+        <input name="qr_label" value="<%= page.qr_label || '' %>">
+
+        <label>QR Link</label>
+        <input name="qr_url" value="<%= page.qr_url || '' %>" placeholder="https://example.com/map-or-guide">
+      </div>
+
+      <div class="wifi-settings-block" id="wifi-settings-block">
+        <h2 class="form-break">WiFi Settings</h2>
+        <div></div>
+
+        <label>WiFi Network</label>
+        <input name="ssid" value="<%= page.ssid || '' %>">
+
+        <label>WiFi Password</label>
+        <input name="wifi_password" value="<%= page.wifi_password || '' %>">
+
+        <label>WiFi Security</label>
+        <select name="wifi_security">
+          <option value="WPA" <%= page.wifi_security === 'WPA' ? 'selected' : '' %>>WPA/WPA2</option>
+          <option value="WEP" <%= page.wifi_security === 'WEP' ? 'selected' : '' %>>WEP</option>
+          <option value="nopass" <%= page.wifi_security === 'nopass' ? 'selected' : '' %>>Open Network</option>
+        </select>
+      </div>
+
+      <div></div>
+      <button type="submit">Save Page</button>
+
+    </form>
+  </section>
+</main>
+
+<script>
+const pageType = document.querySelector('select[name="page_type"]');
+const wifiBlock = document.getElementById('wifi-settings-block');
+const qrBlock = document.getElementById('qr-settings-block');
+
+function togglePageFields() {
+  if (!pageType) return;
+
+  const type = pageType.value;
+
+  if (wifiBlock) {
+    wifiBlock.style.display = type === 'wifi' ? 'contents' : 'none';
+  }
+
+  if (qrBlock) {
+    qrBlock.style.display = ['map', 'events', 'emergency', 'standard'].includes(type)
+      ? 'contents'
+      : 'none';
+  }
+}
+
+if (pageType) {
+  pageType.addEventListener('change', togglePageFields);
+  togglePageFields();
+}
+</script>
+</body>
+</html>
