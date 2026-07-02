@@ -536,14 +536,31 @@ app.post('/admin/pages/create', requireLogin, (req, res) => {
 
 app.get('/admin/page/:id', requireLogin, (req, res) => {
   const settings = allSettings();
-  const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
+
+  const page = db.prepare(`
+    SELECT *
+    FROM pages
+    WHERE id = ?
+  `).get(req.params.id);
 
   if (!page) {
     return res.status(404).send('Page not found');
   }
 
+  const galleryImages = db.prepare(`
+    SELECT *
+    FROM gallery_images
+    WHERE page_id = ?
+    ORDER BY sort_order ASC, id ASC
+  `).all(page.id).map(image => ({
+    ...image,
+    url: mediaUrl(image.filename),
+    is_video: isVideo(image.filename)
+  }));
+
   res.render('edit-page', {
     page,
+    galleryImages,
     settings,
     user: currentUser(req),
     isAdmin: req.session.role === 'admin',
