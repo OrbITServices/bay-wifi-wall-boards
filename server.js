@@ -47,6 +47,13 @@ db.exec(`
     wifi_security TEXT DEFAULT 'WPA'
   );
 
+  CREATE TABLE IF NOT EXISTS gallery_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  page_id INTEGER NOT NULL,
+  filename TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 1
+);
+
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
@@ -366,14 +373,31 @@ async function pageToDisplay(page) {
     });
   }
 
+  let galleryImages = [];
+
+  if (page.page_type === 'gallery') {
+    galleryImages = db.prepare(`
+      SELECT *
+      FROM gallery_images
+      WHERE page_id = ?
+      ORDER BY sort_order ASC, id ASC
+    `).all(page.id).map(image => ({
+      ...image,
+      url: mediaUrl(image.filename),
+      is_video: isVideo(image.filename)
+    }));
+  }
+
   return {
     ...page,
     media_url: mediaUrl(page.media),
     is_video: isVideo(page.media),
+    gallery_images: galleryImages,
     body_lines: String(page.body || '').split('\n').filter(Boolean),
     qr_image: qrImage
   };
 }
+
 
 app.get('/', (req, res) => {
   res.redirect('/display');
@@ -527,57 +551,107 @@ app.get('/admin/page/:id', requireLogin, (req, res) => {
   });
 });
 
-app.post('/admin/page/:id', requireLogin, upload.single('media_file'), (req, res) => {
-  const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
+app.post(
+  '/admin/page/:id',
+  requireLogin,
+  upload.fields([
+    { name: 'media_file', maxCount: 1 },
+    { name: 'gallery_files', maxCount: 20 }
+  ]),
+  (req, res) => {
+    const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
 
-  if (!page) {
-    return res.status(404).send('Page not found');
+    if (!page) {
+      return res.status(404).send('Page not found');
+    }
+
+    const media = req.files?.media_file?.[0]
+      ? req.files.media_file[0].filename
+      : page.media;
+
+    if (req.files?.gallery_files?.length) {
+      const maxSort = db.prepare(`
+        SELECT COALESCE(MAX(sort_order), 0) AS max_sort
+        FROM gallery_images
+        WHERE page_id = ?
+      `).get(req.params.id);
+
+      const insertGalleryImage = db.prepare(`
+        INSERT INTO gallery_images (page_id, filename, sort_order)
+        VALUES (?, ?, ?)
+      `);
+
+      req.files.gallery_files.forEach((file, index) => {
+        insertGalleryImage.run(
+          req.params.id,
+          file.filename,
+          maxSort.max_sort + index + 1
+        );
+      });
+    }
+
+    db.prepare(`
+      UPDATE pages
+      SET
+        title = ?,
+        subtitle = ?,
+        label = ?,
+        body = ?,
+        media = ?,
+        qr_label = ?,
+        qr_url = ?,
+        page_type = ?,
+        ssid = ?,
+        wifi_password = ?,
+        wifi_security = ?,
+        enabled = ?,
+        sort_order = ?,
+        duration = ?
+      WHERE id = ?
+    `).run(
+      req.body.title || '',
+      req.body.subtitle || '',
+      req.body.label || '',
+      req.body.body || '',
+      media,
+      req.body.qr_label || '',
+      req.body.qr_url || '',
+      req.body.page_type || 'standard',
+      req.body.ssid || '',
+      req.body.wifi_password || '',
+      req.body.wifi_security || 'WPA',
+      req.body.enabled ? 1 : 0,
+      parseInt(req.body.sort_order || 1, 10),
+      Math.max(3, parseInt(req.body.duration || 15, 10)),
+      req.params.id
+    );
+
+    res.redirect('/admin/page/' + req.params.id);
   }
-
-  const media = req.file ? req.file.filename : page.media;
-
-  db.prepare(`
-    UPDATE pages
-    SET
-      title = ?,
-      subtitle = ?,
-      label = ?,
-      body = ?,
-      media = ?,
-      qr_label = ?,
-      qr_url = ?,
-      page_type = ?,
-      ssid = ?,
-      wifi_password = ?,
-      wifi_security = ?,
-      enabled = ?,
-      sort_order = ?,
-      duration = ?
-    WHERE id = ?
-  `).run(
-    req.body.title || '',
-    req.body.subtitle || '',
-    req.body.label || '',
-    req.body.body || '',
-    media,
-    req.body.qr_label || '',
-    req.body.qr_url || '',
-    req.body.page_type || 'standard',
-    req.body.ssid || '',
-    req.body.wifi_password || '',
-    req.body.wifi_security || 'WPA',
-    req.body.enabled ? 1 : 0,
-    parseInt(req.body.sort_order || 1, 10),
-    Math.max(3, parseInt(req.body.duration || 15, 10)),
-    req.params.id
-  );
-
-  res.redirect('/admin?message=' + encodeURIComponent('Page saved.'));
-});
+);
 
 app.post('/admin/page/:id/remove-media', requireLogin, (req, res) => {
   db.prepare("UPDATE pages SET media = '' WHERE id = ?").run(req.params.id);
   res.redirect('/admin/page/' + req.params.id);
+});
+
+app.post('/admin/gallery-image/:id/delete', requireLogin, (req, res) => {
+  const image = db.prepare(`
+    SELECT *
+    FROM gallery_images
+    WHERE id = ?
+  `).get(req.params.id);
+
+  if (!image) {
+    return res.redirect('/admin');
+  }
+
+  db.prepare(`
+    DELETE FROM gallery_images
+    WHERE id = ?
+  `).run(req.params.id);
+
+  res.redirect('/admin/page/' + image.page_id);
 });
 
 app.post('/admin/change-password', requireLogin, (req, res) => {
