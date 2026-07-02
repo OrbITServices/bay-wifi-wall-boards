@@ -31,8 +31,18 @@
     <section class="slide <%= (page.page_type === 'restaurant_menu' || page.page_type === 'gallery') ? 'menu-slide' : '' %>" data-duration="<%= Math.max(3, page.duration || 15) * 1000 %>">
 
       <div class="media">
-        <% if (page.media_url) { %>
-          <% if (page.is_video) { %>
+		<% if ((page.page_type === 'gallery' || page.page_type === 'restaurant_menu') && page.gallery_images && page.gallery_images.length) { %>
+  <div class="gallery-grid gallery-count-<%= page.gallery_images.length %>">
+    <% page.gallery_images.forEach(item => { %>
+      <% if (item.is_video) { %>
+        <video src="<%= item.url %>" muted loop playsinline></video>
+      <% } else { %>
+        <img src="<%= item.url %>">
+      <% } %>
+    <% }) %>
+  </div>
+<% } else if (page.media_url) { %>
+            <% if (page.is_video) { %>
             <video src="<%= page.media_url %>" muted loop playsinline></video>
           <% } else { %>
             <img src="<%= page.media_url %>">
@@ -332,6 +342,24 @@ html,body{margin:0;padding:0;background:#000}
 @keyframes ticker{
   from{transform:translateX(0)}
   to{transform:translateX(-100%)}
+}
+
+.gallery-grid{
+    width:100%;
+    height:78vh;
+    display:grid;
+    gap:18px;
+    grid-template-columns:repeat(auto-fit,minmax(420px,1fr));
+    grid-auto-rows:1fr;
+}
+
+.gallery-grid img,
+.gallery-grid video{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    border-radius:22px;
+    background:#111;
 }
 </style>
 
