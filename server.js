@@ -576,7 +576,7 @@ app.post('/admin/page/:id', requireLogin, upload.single('media_file'), (req, res
 });
 
 app.post('/admin/page/:id/remove-media', requireLogin, (req, res) => {
-  db.prepare('UPDATE pages SET media = "" WHERE id = ?').run(req.params.id);
+  db.prepare("UPDATE pages SET media = '' WHERE id = ?").run(req.params.id);
   res.redirect('/admin/page/' + req.params.id);
 });
 
