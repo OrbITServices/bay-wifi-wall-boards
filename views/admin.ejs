@@ -1,1 +1,226 @@
-<!doctype html><html><head><meta charset="utf-8"><title><%= settings.site_name || 'Bay WiFi Wall Boards' %> Admin</title><link rel="stylesheet" href="/public/css/admin.css"></head><body><header class="topbar"><div class="admin-brand"><img class="admin-logo" src="<%= brandLogo %>" alt="Bay WiFi"><div><h1><%= settings.site_name || 'Bay WiFi Wall Boards' %></h1><small>Signed in as <%= user.username %> (<%= user.role %>)</small></div></div><nav><a href="/display" target="_blank">Open Display</a><a href="/health" target="_blank">Health</a><a href="/logout">Logout</a></nav></header><main class="admin-wrap"><% if (message) { %><div class="notice"><%= message %></div><% } %><% if (isAdmin) { %><section class="panel"><h2>Branding</h2><form method="post" action="/admin/settings" enctype="multipart/form-data" class="grid-form"><label>System Name</label><input name="site_name" value="<%= settings.site_name || '' %>"><label>Custom Logo</label><div><input type="file" name="logo_file" accept="image/*"><p class="field-help">Leave blank to use the built-in Bay WiFi logo.</p></div><label>Current Logo</label><div><img class="logo-preview" src="<%= brandLogo %>"></div><label>Footer Text</label><input name="footer" value="<%= settings.footer || '' %>"><label>Bottom Ticker</label><textarea name="ticker"><%= settings.ticker || '' %></textarea><label>Weather Location</label><input name="weather_location" value="<%= settings.weather_location || '' %>"><label>Background Colour</label><input type="color" name="background" value="<%= settings.background || '#07111f' %>"><label>Text Colour</label><input type="color" name="text_colour" value="<%= settings.text_colour || '#ffffff' %>"><label>Accent Colour</label><input type="color" name="accent_colour" value="<%= settings.accent_colour || '#2fb5df' %>"><div></div><button type="submit">Save Branding</button></form></section><% } %><section class="panel"><h2>Pages</h2><form method="post" action="/admin/pages/status"><table><thead><tr><th>On</th><th>Page</th><th>Type</th><th>Order</th><th>Seconds</th><th></th></tr></thead><tbody><% pages.forEach(page => { %><tr><td><input type="checkbox" name="enabled_<%= page.id %>" <%= page.enabled ? 'checked' : '' %>></td><td><strong><%= page.title %></strong><br><small><%= page.subtitle %></small></td><td><span class="pill"><%= page.page_type %></span></td><td><input class="small-input" type="number" name="sort_<%= page.id %>" value="<%= page.sort_order %>"></td><td><input class="small-input" type="number" name="duration_<%= page.id %>" value="<%= page.duration %>" min="3"></td><td><a class="button-link" href="/admin/page/<%= page.id %>">Edit</a></td></tr><% }) %></tbody></table><button type="submit">Save Page Settings</button></form></section><section class="panel"><h2>Change Your Password</h2><form method="post" action="/admin/change-password" class="grid-form"><label>Current Password</label><input type="password" name="current_password" required><label>New Password</label><input type="password" name="new_password" minlength="8" required><label>Confirm New Password</label><input type="password" name="confirm_password" minlength="8" required><div></div><button type="submit">Change Password</button></form></section><% if (isAdmin) { %><section class="panel"><h2>User Access</h2><p class="field-help">Admin can change branding and manage users. Editor can edit pages only.</p><table><thead><tr><th>Username</th><th>Role</th><th>Set New Password</th></tr></thead><tbody><% users.forEach(account => { %><tr><td><strong><%= account.username %></strong></td><td><span class="pill"><%= account.role %></span></td><td><form method="post" action="/admin/users/<%= account.id %>/password" class="inline-password-form"><input type="password" name="new_password" placeholder="New password" minlength="8" required><input type="password" name="confirm_password" placeholder="Confirm password" minlength="8" required><button type="submit">Update</button></form></td></tr><% }) %></tbody></table><h3>Create Editor Login</h3><form method="post" action="/admin/users/create-editor" class="grid-form"><label>Username</label><input name="username" required><label>Password</label><input type="password" name="password" minlength="8" required><div></div><button type="submit">Create Editor</button></form></section><% } %></main></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title><%= settings.site_name || 'Bay WiFi Wall Boards' %> Admin</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+</head>
+
+<body>
+<header class="topbar">
+  <div class="admin-brand">
+    <img class="admin-logo" src="<%= brandLogo %>" alt="Bay WiFi">
+
+    <div>
+      <h1><%= settings.site_name || 'Bay WiFi Wall Boards' %></h1>
+      <small>Signed in as <%= user.username %> (<%= user.role %>)</small>
+    </div>
+  </div>
+
+  <nav>
+    <a href="/display" target="_blank">Open Display</a>
+    <a href="/health" target="_blank">Health</a>
+    <a href="/logout">Logout</a>
+  </nav>
+</header>
+
+<main class="admin-wrap">
+  <% if (message) { %>
+    <div class="notice"><%= message %></div>
+  <% } %>
+
+  <% if (isAdmin) { %>
+    <section class="panel">
+      <h2>Branding</h2>
+
+      <form method="post" action="/admin/settings" enctype="multipart/form-data" class="grid-form">
+        <label>System Name</label>
+        <input name="site_name" value="<%= settings.site_name || '' %>">
+
+        <label>Custom Logo</label>
+        <div>
+          <input type="file" name="logo_file" accept="image/*">
+          <p class="field-help">Leave blank to use the built-in Bay WiFi logo.</p>
+        </div>
+
+        <label>Current Logo</label>
+        <div>
+          <img class="logo-preview" src="<%= brandLogo %>">
+        </div>
+
+        <label>Footer Text</label>
+        <input name="footer" value="<%= settings.footer || '' %>">
+
+        <label>Bottom Ticker</label>
+        <textarea name="ticker"><%= settings.ticker || '' %></textarea>
+
+        <label>Weather Location</label>
+        <input name="weather_location" value="<%= settings.weather_location || '' %>">
+
+        <label>Background Colour</label>
+        <input type="color" name="background" value="<%= settings.background || '#07111f' %>">
+
+        <label>Text Colour</label>
+        <input type="color" name="text_colour" value="<%= settings.text_colour || '#ffffff' %>">
+
+        <label>Accent Colour</label>
+        <input type="color" name="accent_colour" value="<%= settings.accent_colour || '#2fb5df' %>">
+
+        <div></div>
+        <button type="submit">Save Branding</button>
+      </form>
+    </section>
+  <% } %>
+
+  <section class="panel">
+    <h2>Pages</h2>
+
+    <form method="post" action="/admin/pages/status">
+      <table>
+        <thead>
+          <tr>
+            <th>On</th>
+            <th>Page</th>
+            <th>Type</th>
+            <th>Order</th>
+            <th>Seconds</th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% pages.forEach(page => { %>
+            <tr>
+              <td>
+                <input
+                  type="checkbox"
+                  name="enabled_<%= page.id %>"
+                  <%= page.enabled ? 'checked' : '' %>
+                >
+              </td>
+
+              <td>
+                <strong><%= page.title %></strong><br>
+                <small><%= page.subtitle %></small>
+              </td>
+
+              <td>
+                <span class="pill"><%= page.page_type %></span>
+              </td>
+
+              <td>
+                <input
+                  class="small-input"
+                  type="number"
+                  name="sort_<%= page.id %>"
+                  value="<%= page.sort_order %>"
+                >
+              </td>
+
+              <td>
+                <input
+                  class="small-input"
+                  type="number"
+                  name="duration_<%= page.id %>"
+                  value="<%= page.duration %>"
+                  min="3"
+                >
+              </td>
+
+              <td>
+                <a class="button-link" href="/admin/page/<%= page.id %>">Edit</a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <button type="submit">Save Page Settings</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Change Your Password</h2>
+
+    <form method="post" action="/admin/change-password" class="grid-form">
+      <label>Current Password</label>
+      <input type="password" name="current_password" required>
+
+      <label>New Password</label>
+      <input type="password" name="new_password" minlength="8" required>
+
+      <label>Confirm New Password</label>
+      <input type="password" name="confirm_password" minlength="8" required>
+
+      <div></div>
+      <button type="submit">Change Password</button>
+    </form>
+  </section>
+
+  <% if (isAdmin) { %>
+    <section class="panel">
+      <h2>User Access</h2>
+      <p class="field-help">Admin can change branding and manage users. Editor can edit pages only.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Set New Password</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% users.forEach(account => { %>
+            <tr>
+              <td><strong><%= account.username %></strong></td>
+              <td><span class="pill"><%= account.role %></span></td>
+
+              <td>
+                <form
+                  method="post"
+                  action="/admin/users/<%= account.id %>/password"
+                  class="inline-password-form"
+                >
+                  <input
+                    type="password"
+                    name="new_password"
+                    placeholder="New password"
+                    minlength="8"
+                    required
+                  >
+
+                  <input
+                    type="password"
+                    name="confirm_password"
+                    placeholder="Confirm password"
+                    minlength="8"
+                    required
+                  >
+
+                  <button type="submit">Update</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <h3>Create Editor Login</h3>
+
+      <form method="post" action="/admin/users/create-editor" class="grid-form">
+        <label>Username</label>
+        <input name="username" required>
+
+        <label>Password</label>
+        <input type="password" name="password" minlength="8" required>
+
+        <div></div>
+        <button type="submit">Create Editor</button>
+      </form>
+    </section>
+  <% } %>
+</main>
+</body>
+</html>
