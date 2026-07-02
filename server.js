@@ -571,7 +571,7 @@ app.get('/admin/page/:id', requireLogin, (req, res) => {
 app.post(
   '/admin/page/:id',
   requireLogin,
-  upload.single('media_file')
+  upload.single('media_file'),
   (req, res) => {
     const page = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
 
